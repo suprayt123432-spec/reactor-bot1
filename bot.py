@@ -59,7 +59,7 @@ data = ensure_data()
 intents = discord.Intents.default()
 intents.members = True
 intents.guilds = True
-intents.message_content = True  # ✅ add missing intent
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
@@ -208,26 +208,37 @@ async def on_disconnect():
         await ch.send("🔴 Bot is **offline**!")
 
 # ============================
-# Run with rate-limit safety
+# Run with rate-limit safety (fixed)
 # ============================
 if __name__ == "__main__":
     keep_alive()  # ✅ Keeps Render container awake
 
-    # Delay to avoid Cloudflare block
     print("⏳ Waiting 10 seconds before login (avoid rate-limit)...")
     time.sleep(10)
 
-    # Safe retry loop
-    while True:
-        try:
-            bot.run(TOKEN)
-        except discord.errors.HTTPException as e:
-            if e.status == 429:
-                print("⚠️ Rate limited by Discord — waiting 60 seconds before retrying...")
-                time.sleep(60)
+    async def safe_start():
+        retries = 0
+        while retries < 10:
+            try:
+                print(f"🚀 Attempting login (try {retries + 1})...")
+                await bot.start(TOKEN)
+            except discord.errors.HTTPException as e:
+                if e.status == 429:
+                    wait_time = min(60 * (retries + 1), 600)
+                    print(f"⚠️ Rate limited — waiting {wait_time}s before retry...")
+                    await asyncio.sleep(wait_time)
+                    retries += 1
+                else:
+                    print(f"❌ Discord HTTP error: {e}")
+                    await asyncio.sleep(30)
+            except Exception as e:
+                print(f"💥 Unexpected error: {e}")
+                await asyncio.sleep(30)
             else:
-                raise e
-        except Exception as e:
-            print(f"❌ Unexpected error: {e}")
-            time.sleep(30)
+                print("✅ Bot logged in successfully!")
+                return
 
+        print("❌ Too many retries — exiting.")
+        os._exit(1)
+
+    asyncio.run(safe_start())
