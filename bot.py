@@ -5,6 +5,7 @@ from discord.ext import commands
 import os
 import json
 import re
+from keep_alive import keep_alive  # ✅ Added for Render uptime support
 
 # ============================
 # CONFIG
@@ -281,5 +282,6 @@ async def on_disconnect():
 # ============================
 # Run
 # ============================
-bot.run(TOKEN)
-
+if __name__ == "__main__":
+    keep_alive()  # ✅ starts the Flask server for Render
+    bot.run(TOKEN)
