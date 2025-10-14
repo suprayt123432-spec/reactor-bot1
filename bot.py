@@ -1,10 +1,12 @@
-# bot.py - Render-ready version (environment + uptime fixed)
+# bot.py - Render-ready version (with retry, delay, and uptime fixes)
 import discord
 from discord import app_commands
 from discord.ext import commands
 import os
 import json
 import re
+import time
+import asyncio
 from keep_alive import keep_alive
 
 # ============================
@@ -56,6 +58,7 @@ data = ensure_data()
 intents = discord.Intents.default()
 intents.members = True
 intents.guilds = True
+intents.message_content = True  # ✅ add missing intent
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
@@ -204,8 +207,25 @@ async def on_disconnect():
         await ch.send("🔴 Bot is **offline**!")
 
 # ============================
-# Run
+# Run with rate-limit safety
 # ============================
 if __name__ == "__main__":
     keep_alive()  # ✅ Keeps Render container awake
-    bot.run(TOKEN)
+
+    # Delay to avoid Cloudflare block
+    print("⏳ Waiting 10 seconds before login (avoid rate-limit)...")
+    time.sleep(10)
+
+    # Safe retry loop
+    while True:
+        try:
+            bot.run(TOKEN)
+        except discord.errors.HTTPException as e:
+            if e.status == 429:
+                print("⚠️ Rate limited by Discord — waiting 60 seconds before retrying...")
+                time.sleep(60)
+            else:
+                raise e
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+            time.sleep(30)
