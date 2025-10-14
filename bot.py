@@ -1,4 +1,4 @@
-# bot.py - Render-ready version (fixed environment + uptime)
+# bot.py - Render-ready version (environment + uptime fixed)
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -10,9 +10,9 @@ from keep_alive import keep_alive
 # ============================
 # CONFIG
 # ============================
-TOKEN = os.getenv("TOKEN")  # ✅ Loaded from environment variable
+TOKEN = os.getenv("TOKEN")  # ✅ Loaded securely from Render Environment Variable
 if not TOKEN:
-    raise ValueError("⚠️ TOKEN not found — please set it in Render Environment Variables.")
+    raise ValueError("⚠️ TOKEN not found — please set it under Environment Variables in Render!")
 
 GUILD_ID = 1427269750576124007
 OWNER_ID = 1184517618749669510
@@ -84,9 +84,11 @@ def parse_amount(input_str: str) -> float:
         raise ValueError("Invalid amount format.")
     num, suffix = match.groups()
     num = float(num.replace(",", ""))
+
     suffix_map = {
         "k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12,
-        "qa": 1e15, "qi": 1e18, "sx": 1e21, "sp": 1e24, "oc": 1e27
+        "qa": 1e15, "qi": 1e18, "sx": 1e21,
+        "sp": 1e24, "oc": 1e27
     }
     if suffix in suffix_map:
         num *= suffix_map[suffix]
@@ -180,8 +182,6 @@ async def tickets_show(interaction: discord.Interaction):
     save_data()
     await interaction.response.send_message("✅ Panel created.", ephemeral=True)
 
-# (rest of your commands remain unchanged)
-
 # ============================
 # Events
 # ============================
@@ -207,5 +207,5 @@ async def on_disconnect():
 # Run
 # ============================
 if __name__ == "__main__":
-    keep_alive()  # ✅ keeps Render container awake
+    keep_alive()  # ✅ Keeps Render container awake
     bot.run(TOKEN)
