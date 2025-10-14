@@ -25,6 +25,7 @@ STATUS_CHANNEL_ID = 1427304360484012053
 ADMIN_ROLE_IDS = {
     1427270463305945172,  # Owner role
     1427294002662736046,
+    1427333158898237461,
 }
 
 # ============================
@@ -229,3 +230,4 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"❌ Unexpected error: {e}")
             time.sleep(30)
+
