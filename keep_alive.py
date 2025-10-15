@@ -1,4 +1,4 @@
-# keep_alive.py
+# keep_alive.py — keeps the Render instance alive
 from flask import Flask
 from threading import Thread
 
@@ -6,7 +6,7 @@ app = Flask('')
 
 @app.route('/')
 def home():
-    return "Bot is alive!"
+    return "✅ Bot server active."
 
 def run():
     app.run(host='0.0.0.0', port=8080)
