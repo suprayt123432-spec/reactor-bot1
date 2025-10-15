@@ -1,7 +1,7 @@
 # bot.py — Stable Render-ready version
 import discord
 from discord.ext import commands
-import os, json, re
+import os, json, re, asyncio
 from keep_alive import keep_alive
 
 # ============================
@@ -27,6 +27,7 @@ ADMIN_ROLE_IDS = {
 # DATA
 # ============================
 def ensure_data():
+    """Ensures the data file exists and is valid."""
     if not os.path.exists(PANEL_FILE):
         base = {
             "ticket_counter": 0,
@@ -39,12 +40,26 @@ def ensure_data():
         with open(PANEL_FILE, "w") as f:
             json.dump(base, f, indent=2)
         return base
-    with open(PANEL_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(PANEL_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {
+            "ticket_counter": 0,
+            "balances": {},
+            "usernames": {},
+            "links": {},
+            "invites": {},
+            "panel": None
+        }
 
 def save_data():
-    with open(PANEL_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    """Writes the data file safely."""
+    try:
+        with open(PANEL_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"⚠️ Error saving data: {e}")
 
 data = ensure_data()
 
@@ -97,6 +112,7 @@ def parse_amount(input_str: str) -> float:
 # STATUS HANDLER
 # ============================
 async def update_panel_status(status_text: str):
+    """Updates the status text in the ticket panel embed."""
     panel = data.get("panel")
     if not panel:
         return
@@ -208,9 +224,31 @@ async def on_disconnect():
         await ch.send("🔴 Bot disconnected.")
 
 # ============================
-# STARTUP
+# SAFE STARTUP (ANTI-RATE-LIMIT)
 # ============================
-if __name__ == "__main__":
+async def safe_start():
     keep_alive()
-    print("⏳ Connecting to Discord...")
-    bot.run(TOKEN)
+    print("⏳ Waiting 25 seconds before connecting to Discord...")
+    await asyncio.sleep(25)
+
+    try:
+        await bot.start(TOKEN)
+    except discord.errors.HTTPException as e:
+        if e.status == 429:
+            print("⚠️ Rate limited — waiting 5 minutes before retry...")
+            await asyncio.sleep(300)
+        else:
+            print(f"❌ Discord HTTP error: {e}")
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}")
+    finally:
+        await bot.close()
+        print("🔁 Restarting after delay...")
+        await asyncio.sleep(300)
+        await safe_start()
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(safe_start())
+    except KeyboardInterrupt:
+        print("🛑 Bot stopped manually.")
