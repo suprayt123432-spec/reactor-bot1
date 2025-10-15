@@ -1,7 +1,7 @@
-# bot.py — Clean Render-ready version (no session leaks, stable uptime)
+# bot.py — Stable Render-ready version
 import discord
 from discord.ext import commands
-import os, json, re, time, asyncio
+import os, json, re
 from keep_alive import keep_alive
 
 # ============================
@@ -24,7 +24,7 @@ ADMIN_ROLE_IDS = {
 }
 
 # ============================
-# PERSISTENCE
+# DATA
 # ============================
 def ensure_data():
     if not os.path.exists(PANEL_FILE):
@@ -94,7 +94,7 @@ def parse_amount(input_str: str) -> float:
     return num
 
 # ============================
-# PANEL STATUS HANDLER
+# STATUS HANDLER
 # ============================
 async def update_panel_status(status_text: str):
     panel = data.get("panel")
@@ -208,31 +208,9 @@ async def on_disconnect():
         await ch.send("🔴 Bot disconnected.")
 
 # ============================
-# SAFE STARTUP
+# STARTUP
 # ============================
-async def safe_start():
-    keep_alive()  # Keep server alive
-    print("⏳ Waiting 10 seconds before connecting...")
-    await asyncio.sleep(10)
-
-    while True:
-        try:
-            await bot.start(TOKEN)
-        except discord.errors.HTTPException as e:
-            if e.status == 429:
-                print("⚠️ Rate limited — waiting 60s...")
-                await asyncio.sleep(60)
-            else:
-                print(f"❌ HTTP error: {e}")
-                await asyncio.sleep(30)
-        except Exception as e:
-            print(f"❌ Unexpected error: {e}")
-            await asyncio.sleep(30)
-        finally:
-            await bot.close()
-
 if __name__ == "__main__":
-    try:
-        asyncio.run(safe_start())
-    except KeyboardInterrupt:
-        print("🛑 Bot stopped manually.")
+    keep_alive()
+    print("⏳ Connecting to Discord...")
+    bot.run(TOKEN)
